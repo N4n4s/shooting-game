@@ -26,6 +26,12 @@ padding:10px;
 font-size:18px;
 }
 
+#controls{
+font-size:14px;
+opacity:0.8;
+margin-top:5px;
+}
+
 </style>
 
 </head>
@@ -34,7 +40,11 @@ font-size:18px;
 
 <div id="ui">
 Score: <span id="score">0</span>　
-HP: <span id="hp">5</span>
+HP: <span id="hp">15</span>
+</div>
+
+<div id="controls">
+操作：矢印キーで移動 / スペースで攻撃
 </div>
 
 <canvas id="game" width="450" height="550"></canvas>
@@ -52,31 +62,31 @@ let enemyBullets=[]
 let explosions=[]
 
 let score=0
-let hp=5
+let hp=15
 
 let boss=null
 let bossHP=40
 
-
-// プレイヤー移動
-document.addEventListener("mousemove",(e)=>{
-
-const rect=canvas.getBoundingClientRect()
-
-player.x=e.clientX-rect.left
-
-})
+let keys={}
 
 
-// 弾発射
-document.addEventListener("click",()=>{
+// キー入力
+document.addEventListener("keydown",(e)=>{
 
+keys[e.code]=true
+
+if(e.code==="Space"){
 bullets.push({x:player.x,y:player.y})
+}
 
 })
 
+document.addEventListener("keyup",(e)=>{
+keys[e.code]=false
+})
 
-// 爆発作成
+
+// 爆発
 function createExplosion(x,y){
 
 explosions.push({
@@ -143,6 +153,19 @@ setInterval(enemyShoot,1800)
 
 function update(){
 
+const speed=5
+
+if(keys["ArrowLeft"]) player.x-=speed
+if(keys["ArrowRight"]) player.x+=speed
+if(keys["ArrowUp"]) player.y-=speed
+if(keys["ArrowDown"]) player.y+=speed
+
+
+// 画面外防止
+player.x=Math.max(10,Math.min(canvas.width-10,player.x))
+player.y=Math.max(10,Math.min(canvas.height-10,player.y))
+
+
 bullets.forEach(b=>b.y-=7)
 
 enemyBullets.forEach(b=>{
@@ -185,6 +208,7 @@ bullets.splice(bi,1)
 enemies.splice(ei,1)
 
 score++
+
 document.getElementById("score").innerText=score
 
 }
@@ -214,7 +238,7 @@ alert("ボス撃破！ゲームクリア！")
 })
 
 
-// プレイヤー被弾
+// 被弾
 enemyBullets.forEach((b,i)=>{
 
 if(Math.abs(b.x-player.x)<12 && Math.abs(b.y-player.y)<12){
@@ -240,7 +264,7 @@ location.reload()
 })
 
 
-// ボス出現
+// ボス
 if(score>=20 && !boss){
 
 boss={
@@ -296,7 +320,7 @@ ctx.fillRect(b.x-3,b.y-3,6,6)
 })
 
 
-// 爆発描画
+// 爆発
 explosions.forEach(ex=>{
 
 ctx.beginPath()
