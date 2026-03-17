@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Broken Shooter</title>
+
+<style>
+
+body{
+margin:0;
+background:black;
+color:white;
+font-family:sans-serif;
+text-align:center;
+}
+
+canvas{
+background:#111;
+display:block;
+margin:auto;
+}
+
+#ui{
+padding:10px;
+font-size:18px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="ui">
+Score: <span id="score">0</span>　
+HP: <span id="hp">5</span>
+</div>
+
+<canvas id="game" width="450" height="550"></canvas>
+
+<script>
+
+const canvas = document.getElementById("game")
+const ctx = canvas.getContext("2d")
+
+let player = {x:225,y:500}
+
+let bullets=[]
+let enemies=[]
+let enemyBullets=[]
+let explosions=[]
+
+let score=0
+let hp=5
+
+let boss=null
+let bossHP=40
+
+
+// プレイヤー移動
+document.addEventListener("mousemove",(e)=>{
+
+const rect=canvas.getBoundingClientRect()
+
+player.x=e.clientX-rect.left
+
+})
+
+
+// 弾発射
+document.addEventListener("click",()=>{
+
+bullets.push({x:player.x,y:player.y})
+
+})
+
+
+// 爆発作成
+function createExplosion(x,y){
+
+explosions.push({
+x:x,
+y:y,
+radius:5,
+life:20
+})
+
+}
+
+
+// 敵生成
+function spawnEnemy(){
+
+if(boss) return
+
+let x=Math.random()*430
+
+enemies.push({
+x:x,
+y:0,
+speed:1.5+Math.random()*1.5
+})
+
+}
+
+setInterval(spawnEnemy,1500)
+
+
+// 敵弾
+function enemyShoot(){
+
+enemies.forEach(e=>{
+
+enemyBullets.push({
+x:e.x,
+y:e.y,
+vx:(Math.random()-0.5)*1.5,
+vy:3
+})
+
+})
+
+if(boss){
+
+for(let i=0;i<5;i++){
+
+enemyBullets.push({
+x:boss.x,
+y:boss.y,
+vx:(Math.random()-0.5)*3,
+vy:2.5
+})
+
+}
+
+}
+
+}
+
+setInterval(enemyShoot,1800)
+
+
+function update(){
+
+bullets.forEach(b=>b.y-=7)
+
+enemyBullets.forEach(b=>{
+b.x+=b.vx
+b.y+=b.vy
+})
+
+enemies.forEach(e=>{
+e.y+=e.speed
+})
+
+if(boss){
+boss.x+=Math.sin(Date.now()/400)*3
+}
+
+
+// 爆発更新
+explosions.forEach((ex,i)=>{
+
+ex.radius+=2
+ex.life--
+
+if(ex.life<=0){
+explosions.splice(i,1)
+}
+
+})
+
+
+// 衝突
+bullets.forEach((b,bi)=>{
+
+enemies.forEach((e,ei)=>{
+
+if(Math.abs(b.x-e.x)<15 && Math.abs(b.y-e.y)<15){
+
+createExplosion(e.x,e.y)
+
+bullets.splice(bi,1)
+enemies.splice(ei,1)
+
+score++
+document.getElementById("score").innerText=score
+
+}
+
+})
+
+if(boss && Math.abs(b.x-boss.x)<35 && Math.abs(b.y-boss.y)<35){
+
+createExplosion(b.x,b.y)
+
+bullets.splice(bi,1)
+
+bossHP--
+
+if(bossHP<=0){
+
+createExplosion(boss.x,boss.y)
+
+boss=null
+
+alert("ボス撃破！ゲームクリア！")
+
+}
+
+}
+
+})
+
+
+// プレイヤー被弾
+enemyBullets.forEach((b,i)=>{
+
+if(Math.abs(b.x-player.x)<12 && Math.abs(b.y-player.y)<12){
+
+enemyBullets.splice(i,1)
+
+hp--
+
+document.getElementById("hp").innerText=hp
+
+createExplosion(player.x,player.y)
+
+if(hp<=0){
+
+alert("GAME OVER")
+
+location.reload()
+
+}
+
+}
+
+})
+
+
+// ボス出現
+if(score>=20 && !boss){
+
+boss={
+x:225,
+y:80
+}
+
+enemies=[]
+
+}
+
+}
+
+
+// 描画
+function draw(){
+
+ctx.clearRect(0,0,canvas.width,canvas.height)
+
+
+// プレイヤー
+ctx.fillStyle="cyan"
+ctx.fillRect(player.x-10,player.y-10,20,20)
+
+
+// 弾
+ctx.fillStyle="yellow"
+
+bullets.forEach(b=>{
+
+ctx.fillRect(b.x-2,b.y-10,4,10)
+
+})
+
+
+// 敵
+ctx.fillStyle="red"
+
+enemies.forEach(e=>{
+
+ctx.fillRect(e.x-10,e.y-10,20,20)
+
+})
+
+
+// 敵弾
+ctx.fillStyle="orange"
+
+enemyBullets.forEach(b=>{
+
+ctx.fillRect(b.x-3,b.y-3,6,6)
+
+})
+
+
+// 爆発描画
+explosions.forEach(ex=>{
+
+ctx.beginPath()
+
+ctx.arc(ex.x,ex.y,ex.radius,0,Math.PI*2)
+
+ctx.strokeStyle="yellow"
+
+ctx.stroke()
+
+})
+
+
+// ボス
+if(boss){
+
+ctx.fillStyle="purple"
+
+ctx.fillRect(boss.x-35,boss.y-35,70,70)
+
+ctx.fillStyle="white"
+
+ctx.fillText("BOSS HP:"+bossHP,10,30)
+
+}
+
+}
+
+
+// ループ
+function loop(){
+
+update()
+draw()
+
+requestAnimationFrame(loop)
+
+}
+
+loop()
+
+</script>
+
+</body>
+</html>
